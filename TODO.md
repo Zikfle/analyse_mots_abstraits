@@ -7,8 +7,8 @@
 - [ ] Annotate remaining variable
   - [ ] (*P1*)Setup an individual id by participant
   - [ ] (*P2*)Calculate mlu by child by transcript
-  - [ ] (*Optional*)Calculate frenquency of word by participant
-  - [ ] (*Optional*)Calculate frenquency of word by transcript
+  - [ ] (*Optional*)Calculate frequency of word by participant
+  - [ ] (*Optional*)Calculate frequency of word by transcript
 
 
 
