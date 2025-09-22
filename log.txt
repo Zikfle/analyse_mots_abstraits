@@ -1,0 +1,6 @@
+Filter : df = df.loc[df['role'] == ('Target_Child')]
+Taille du vocabulaire : 2740
+{'nb_token': 1094321, 'nb_nom': 120441, 'lex3': 120441, 'nb_UNK': 0, 'valence': 50770, 'imagea': 63421, 'hyper': 114270}
+{'CLAN': 2740, 'lex3': 2740, 'fan': 565, 'semQc': 1226, 'wordnet': 2424}
+corpus : ['Champaud' 'Geneva' 'Hunkeler' 'Leveille' 'Lyon' 'Palasis' 'Paris'
+ 'Yamaguchi' 'York']

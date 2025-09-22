@@ -12,30 +12,40 @@ from tqdm import tqdm
 import pandas as pd
 import statistics
 
-def parse_metadata(transcript,filename,transcript_id):
+def parse_metadata(transcript,filename,transcript_id,participant_ids):
     rawmetadata = []
     metadata = {'participants' : [] , 'IDS' : []}
     for line in transcript:
         if line[0] == '@':
             rawmetadata.append(line)
-        if len(line) != 2:
+        if len(line) != 2: # maybe < 2
             continue
         line_type = line[0]
         content = line[1]
         if line_type == '@Participants:':
             metadata['participants'] = content.split(',')
         if line_type == '@ID:':
-            metadata['IDS'].append(content.split('|')) # sould always give a list with 10 element
-    metadata2 = {'codeb' : [] , 'roleb' : [] , 'file_name' : [] , 'transcript_id' : [] , 'lang' : [] , 'corpus' : [] , 'code' : [] , 'age' : [] , 
-                 'sex' : [] , 'group' : [] , 'SES' : [] , 'role' : [] , 'education' : [] , 'custom' : [], }
+            metadata['IDS'].append(content.split('|')) # should always give a list with 10 element
+    metadata2 = {'codeb' : [] , 'roleb' : [] , 'file_name' : [] , 'transcript_id' : [] ,
+                  'participant_id' : [] , 'lang' : [] , 'corpus' : [] , 'code' : [] , 
+                  'age' : [] , 'sex' : [] , 'group' : [] , 'SES' : [] , 'role' : [] , 
+                 'education' : [] , 'custom' : [], }
     for idx , participant in enumerate(metadata['participants']):
         #print(participant)
         participant = participant.split(' ')
         #print(participant)
+        # unique_participant = code + corpus
+        unique_participant = str(participant[-2]) + str(metadata['IDS'][idx][1])
+        if unique_participant not in participant_ids:
+            participant_id = len(participant_ids) + 1
+            participant_ids[unique_participant] = participant_id
+        else:
+            participant_id = participant_ids[unique_participant]
         metadata2['codeb'].append(participant[-2])
         metadata2['roleb'].append(participant[-1])
         metadata2['file_name'].append(filename)
         metadata2['transcript_id'].append(transcript_id)
+        metadata2['participant_id'].append(participant_id)
         metadata2['lang'].append(metadata['IDS'][idx][0])
         metadata2['corpus'].append(metadata['IDS'][idx][1])
         metadata2['code'].append(metadata['IDS'][idx][2])
@@ -48,7 +58,7 @@ def parse_metadata(transcript,filename,transcript_id):
         metadata2['custom'].append(metadata['IDS'][idx][9])
         
             
-    return metadata2
+    return (metadata2, participant_ids)
 
 def age_to_days(age):
     days = None
@@ -85,10 +95,12 @@ def parse_lines(transcript,metadata,transcript_name):
     com = ''
     oldtype = '*'
 
-    transcript_dict = {'transcript_name' : [],'transcript_id': [], 'corpus' : [], 'transcript_order': [], 'code': [],
-                               'role': [],'age': [], 'target_age': [], 'utterance': [],'mor': [],'gra': [],'pho': [],'act': [],
-                               'com': [],'sit': []}
+    transcript_dict = {'transcript_name' : [],'transcript_id': [], 'corpus' : [], 
+                       'transcript_order': [], 'participant_id': [], 'code': [], 
+                       'role': [],'age': [], 'target_age': [], 'utterance': [],
+                       'mor': [],'gra': [], 'pho': [],'act': [], 'com': [],'sit': []}
     id_line = 1
+    #calculation of the mean age of target_child(s) in the transcript
     if 'Target_Child' in metadata['role']:
         targets = [i for i, x in enumerate(metadata['role']) if x == 'Target_Child']
         ages = []
@@ -132,6 +144,7 @@ def parse_lines(transcript,metadata,transcript_name):
                         #print(metadata['transcript_id'])
                         #print(position)
                         transcript_id = metadata['transcript_id'][position]
+                        participant_id = metadata['participant_id'][position]
                         role = metadata['role'][position]
                         age = metadata['age'][position]
                         age = age_to_days(age)
@@ -142,6 +155,7 @@ def parse_lines(transcript,metadata,transcript_name):
                 transcript_dict['transcript_id'].append(transcript_id)
                 transcript_dict['corpus'].append(corpus)
                 transcript_dict['transcript_order'].append(id_line)
+                transcript_dict['participant_id'].append(participant_id)
                 transcript_dict['code'].append(code)
                 transcript_dict['role'].append(role)
                 transcript_dict['age'].append(age)
@@ -212,8 +226,8 @@ def parse_chat_folder(data_path):
 
     #print(transcript_save)
 
-    corpus,transcript_id,transcript_file,name_participant,role,age,abreviation,utterance,mor,gra,act,com,sit,other = [],[],[],[],[],[],[],[],[],[],[],[],[],[]
     transcript_id = 0
+    participant_ids = {}
     all_dfs = []
 
     print('---------------------------------------------------------')
@@ -223,7 +237,7 @@ def parse_chat_folder(data_path):
     for transcript_name in tqdm(transcript_save.keys()):
         transcript_id += 1
         transcript = transcript_save[transcript_name]
-        metadata = parse_metadata(transcript,transcript_name,transcript_id)
+        metadata , participant_ids = parse_metadata(transcript,transcript_name,transcript_id,participant_ids)
         parsed_transcript = parse_lines(transcript,metadata,transcript_name)
         all_dfs.append(parsed_transcript)
 
@@ -243,11 +257,11 @@ save_name = 'french_corpa_parsed1.tsv'
 
 # run main function
 if run_as_test == True:
-    data_folder_location = 'A://Maitrise-analyse/data/French-Corpa'
+    data_folder_location = "/Users/zikfle/Documents/Maitrise-analyse/data/French-Corpa"
     result_folder_location = 'A://Maitrise-analyse/results'
 
     final_df = parse_chat_folder(data_folder_location)
-
+    print(final_df['participant_id'])
     if saving == True:
         print('---------------------------------------------------------')
         print('Saving the result in a csv file')

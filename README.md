@@ -237,8 +237,8 @@ Open the resulting TSV files with a spreadsheet program or a text editor:
 | Symptom | Likely cause | Quick fix |
 |---------|--------------|-----------|
 | `ModuleNotFoundError: No module named 'module.childes_parser'` | The script isn’t being run from the project root. | Run `python main_script.py` from the folder that contains the `module` package. |
-| Permissions error when writing files | The result folder is read‑only or you lack write rights. | Verify that you have write permissions, or change *result_folder_location* to a writable path. |
-| Empty or truncated TSV files | One of the earlier steps failed silently. | Check the console output; the helper `save_string_to_file` prints any exceptions. |
+| `Permissions error when writing files` | The result folder is read‑only or you lack write rights. | Verify that you have write permissions, or change *result_folder_location* to a writable path. |
+| `Empty or truncated TSV files` | One of the earlier steps failed silently. | Check the console output; the helper `save_string_to_file` prints any exceptions. |
 
 ---
 

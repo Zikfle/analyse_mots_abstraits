@@ -28,12 +28,12 @@ def save_string_to_file(path, string):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-data_folder_location = 'A://Maitrise-analyse/data'
-raw_data_folder_location = 'A://Maitrise-analyse/data/French-Corpa'
-result_folder_location = 'A://Maitrise-analyse/results'
+data_folder_location = '/Users/zikfle/Documents/Maitrise-analyse/data'
+raw_data_folder_location = '/Users/zikfle/Documents/Maitrise-analyse/data/French-Corpa'
+result_folder_location = '/Users/zikfle/Documents/Maitrise-analyse/results'
 
-parsed_path = 'A://Maitrise-analyse/results/french_corpa_parsed1.tsv'
-token_path = 'A://Maitrise-analyse/results/french_corpa_token1.tsv'
+parsed_path = '/Users/zikfle/Documents/Maitrise-analyse/results/french_corpa_parsed1.tsv'
+token_path = '/Users/zikfle/Documents/Maitrise-analyse/results/french_corpa_token1.tsv'
 
 parsing = True
 tokenization = True

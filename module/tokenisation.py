@@ -6,7 +6,7 @@
 # MIT License
 # ---------------------------------------------------------
 
-### Importing strandard library
+### Importing standard library
 import os
 #import re
 #import pickle

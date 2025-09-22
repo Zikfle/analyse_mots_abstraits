@@ -2,13 +2,13 @@
 # ---------------------------------------------------------
 # Author: Félix Thibaud
 # Created on: 2025-01-28
-# Description:  Automatic anotation of data from corpus French Corpa CHILDES
+# Description:  Automatic annotation of data from corpus French Corpa CHILDES
 #               Annotation automatique des données du corpus French Corpa CHILDES
 # MIT License
 # ---------------------------------------------------------
 
-### Importing strandard library
-import os #for file managment
+### Importing standard library
+import os #for file management
 #import re
 #import pickle
 #import json 
@@ -19,8 +19,8 @@ import ast #for reading string as list
 import unicodedata #for reading string as unicode
 
 ### Importing nlp library
-import nltk #for using wordnet
-nltk.download('omw-1.4') #making sure wordnet is installed
+import nltk #for using Wordnet
+nltk.download('omw-1.4') #making sure Wordnet is installed
 from nltk.corpus import wordnet
 import statistics
 
@@ -32,7 +32,7 @@ def get_hyperval(lemma:str):
     """
     This fonction takes a lemma (str), look if that lemma is in wordnet dictionnary, 
     if it is, it returns the word hyperonym depth to the root of the dict (int)
-    if not, it retunrs None
+    if not, it return None
     
     parametre
     ------------
@@ -69,10 +69,10 @@ def get_sem_val(lemma:str,valence_dic,imagea_dic):
     and return a list containing the valence rating and imageability rating
     of that lemma
     
-    parametre
+    parameter
     ------------
     :lemma: a lemma (str)
-    :return: a list containnig two elements (str or None)
+    :return: a list containing two elements (str or None)
 
     exemple
     ------------
@@ -97,11 +97,11 @@ def lex3_API_converter(lex_phon):
     
 
     api_phon = ''
-    for caractere in lex_phon:
-        if caractere in tbl_lex:
-            api_phon = api_phon + tbl_lex[caractere]
+    for character in lex_phon:
+        if character in tbl_lex:
+            api_phon = api_phon + tbl_lex[character]
         else:
-            print('Caractère non reconnu : ',caractere)
+            print('Caractère non reconnu : ',character)
     
     
     return api_phon
@@ -113,9 +113,9 @@ def get_phonetic(token:str,lex3_dic):
     it's phonologic pattern with syllabation (ex: 'CV.CV.CVC')
     and the number of syllable (ex: 3)
 
-    parametre
+    parameter
     ------------
-    :token: a graphem form (utf-8 str) 
+    :token: a grapheme form (utf-8 str) 
     :return: a list containing 2 str and an int 
     or None if the token is not in the Dico
     (ex :)['fɔnetik', 'CV.CV.CVC', 3]
@@ -135,14 +135,14 @@ def get_phonetic(token:str,lex3_dic):
     return all_phon
 
 
-def get_freq(lemma:str,lex3_dic,dictionnaire_other):
+def get_freq(lemma:str,lex3_dic,dictionary_other):
     """
     This fonction takes a token grapheme (ex: maman)
     return's it's lex3 corpus frequency for book and film
 
-    parametre
+    parameter
     ------------
-    :token: a graphem form (utf-8 str) 
+    :token: a grapheme form (utf-8 str) 
     :return: a list containing 3 float 
     or 0 if the token is not in the Dico
     (ex : maman -> [10.12,2.43,0.1])
@@ -153,8 +153,8 @@ def get_freq(lemma:str,lex3_dic,dictionnaire_other):
     if lemma in lex3_dic:
         freq_film = lex3_dic[lemma][3]
         freq_livre = lex3_dic[lemma][4]
-    if lemma in dictionnaire_other:
-        freq_other = dictionnaire_other[lemma]
+    if lemma in dictionary_other:
+        freq_other = dictionary_other[lemma]
     all_freq = [freq_film,freq_livre,freq_other]
     return all_freq
 
@@ -195,13 +195,13 @@ def annotating(data_path,token_path):
     all_corpus = df['corpus'].unique()
     print(sorted(all_corpus))
 
-    #import valence data into a dictionnairy
+    #import valence data into a dictionary
     valence_df = pd.read_csv(os.path.join(data_path, "data_fan_valence.csv"))
     mot_fan = valence_df.iloc[:, 0]
     mot_valence = valence_df.iloc[:, 4]
     valence_dic = dict(zip(mot_fan[1:], mot_valence[1:]))
 
-    #import imageability data into a dictionnairy
+    #import imageability data into a dictionary
     imagea_df = pd.read_csv(os.path.join(data_path, "data_semantiqc_imagea.csv"))
     mot_semqc = imagea_df.iloc[:, 0]
     mot_imagea = imagea_df.iloc[:, 1]
@@ -231,10 +231,10 @@ def annotating(data_path,token_path):
     occ_match = {'nb_token' : 0, 'nb_nom' : 0, 'lex3' : 0, 'nb_UNK' : 0, 'valence' : 0, 'imagea' : 0, 'hyper' : 0}
     n_child_token = 0
     n_other_token = 0
-    dictionnaire = {}
-    dictionnaire_other = {}
+    dictionary = {}
+    dictionary_other = {}
 
-    id_list,phrase,tok,lemm,n_tok,POSTAGS,hyper,val,imag,phon,patterns,n_syllable,fq_livre,fq_film,fq_other,age = [],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
+    id_list,participant_ids,sentence,tok,lemm,n_tok,POSTAGS,hyper,val,imag,phon,patterns,n_syllable,fq_livre,fq_film,fq_other,mlus,age = [],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
 
     stopword = ['xxx','x', 'xx', 'www' , 'yyy' , 'zzz','-', 'qqq',
                 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','ə','ɛ','ø']
@@ -247,7 +247,7 @@ def annotating(data_path,token_path):
     # making word frequency list for other overheard speech
 
     print('---------------------------------------------------------')
-    print('Calculating word frequency per millon of overheard speech')
+    print('Calculating word frequency per million of overheard speech')
     print('---------------------------------------------------------')
 
     n_other_token = 0
@@ -265,29 +265,37 @@ def annotating(data_path,token_path):
                     #lemme = token
                     #POS = 'UNK'
             '''
-            # making a Noun dictionnary_other and counting occurrence
+            # making a Noun dictionary_other and counting occurrence
             if POS[0] == 'n': 
-                if lemme not in dictionnaire_other:
-                    dictionnaire_other[lemme] = 1
+                if lemme not in dictionary_other:
+                    dictionary_other[lemme] = 1
                 else:
-                    dictionnaire_other[lemme] += 1
+                    dictionary_other[lemme] += 1
 
     # calculating per million frequency of the overheard speech
 
-    for word in dictionnaire_other:
-        #dictionnaire_other[word] = math.log10(dictionnaire_other[word]/n_other_token)
-        dictionnaire_other[word] = (dictionnaire_other[word]/n_other_token)*1000000
+    for word in dictionary_other:
+        #dictionary_other[word] = math.log10(dictionary_other[word]/n_other_token)
+        dictionary_other[word] = (dictionary_other[word]/n_other_token)*1000000
 
 
-    sorteddictionairy_other = dict(reversed(sorted(dictionnaire_other.items(), key=lambda item: item[1])))
-    nom_other = sorteddictionairy_other.keys()
-    nb_occu_other = sorteddictionairy_other.values()
-    dico_other_final = {'Lemme' : nom_other, "Nombre d'occurence" : nb_occu_other}
+
+    sorted_dictionary_other = dict(reversed(sorted(dictionary_other.items(), key=lambda item: item[1])))
+    nom_other = sorted_dictionary_other.keys()
+    nb_occu_other = sorted_dictionary_other.values()
+    dico_other_final = {'Lemme' : nom_other, "Number of occurrence" : nb_occu_other}
     overheard_dico = pd.DataFrame(dico_other_final)
 
     print('---------------------------------------------------------')
+    print('Calculating mlu per participant')
+    print('---------------------------------------------------------')
+
+    mlu_dict = df.groupby(['participant_id', 'transcript_id'])['n_token'].mean().to_dict()
+    #print(mlu_dict)
+
+    print('---------------------------------------------------------')
     print('Annotating hyperonymy, valence, imageability, phonetic, pattern ')
-    print('counting the occurence of each lemma in a dic')
+    print('counting the occurrence of each lemma in a dic')
     print('and counting the quantity of dico match (raw_lemme vs valence vs imagea vs hyper vs phon)')
     print('---------------------------------------------------------')
 
@@ -296,15 +304,18 @@ def annotating(data_path,token_path):
     for index, row in tqdm(df.iloc[:].iterrows(),total=df.shape[0]): 
         uter = str(row['utterance'])
         id = str(row['id'])
+        transcript_id = str(row['transcript_id'])
+        participant_id = str(row['participant_id'])
         lemsents = ast.literal_eval(row['lemme'])
         POSTAG = ast.literal_eval(row['POS'])
         n_token = int(row['n_token'])
         child_age = row['age']
+        mlu = mlu_dict[(float(participant_id), float(transcript_id))]
         for idx, lemme in enumerate(lemsents): #iterate over all word in tokenized sentence
             n_child_token += 1
             lemme = str(lemsents[idx]).lower()
             POS = str(POSTAG[idx])
-            ''' # filtering the stopword (codeword, onomatope and interjection)
+            ''' # filtering the stopword (codeword, onomatopoeia and interjection)
             if token in interstopword:
                 lemme = token
                 POS = 'INTJ'
@@ -313,7 +324,7 @@ def annotating(data_path,token_path):
                     #POS = 'UNK'
             '''
 
-            # get all the values (with custum fonction) for each NOUN
+            # get all the values (with custom function) for each NOUN
             if POS[0] == 'n' and POS != 'neg' and POS != 'n:prop':
                 hyperscore = get_hyperval(lemme)
                 sem_score = get_sem_val(lemme,valence_dic,imagea_dic)
@@ -323,13 +334,14 @@ def annotating(data_path,token_path):
                 phonetic = phone_val[0]
                 phono_pattern = phone_val[1]
                 n_syll = phone_val[2]
-                freq_val = get_freq(lemme,lex3_dic,dictionnaire_other)
+                freq_val = get_freq(lemme,lex3_dic,dictionary_other)
                 film = freq_val[0]
                 livre = freq_val[1]
                 other = freq_val[2]
 
                 id_list.append(id)
-                phrase.append(uter)
+                participant_ids.append(participant_id)
+                sentence.append(uter)
                 tok.append(token)
                 lemm.append(lemme)
                 POSTAGS.append(POS)
@@ -343,6 +355,7 @@ def annotating(data_path,token_path):
                 fq_film.append(film)
                 fq_livre.append(livre)
                 fq_other.append(other)
+                mlus.append(mlu)
                 age.append(child_age)
             #calculate the matching score for Dict
             occ_match['nb_token'] += 1 #count number of token
@@ -360,22 +373,23 @@ def annotating(data_path,token_path):
                     occ_match['nb_UNK'] += 1
             # making a Noun dictionnary and counting occurrence
             if POS[0] == 'n' and POS != 'neg' and POS != 'n:prop' and  (lemme in lex3_dic): 
-                if lemme not in dictionnaire:
-                    dictionnaire[lemme] = 1
+                if lemme not in dictionary:
+                    dictionary[lemme] = 1
                 else:
-                    dictionnaire[lemme] += 1
+                    dictionary[lemme] += 1
 
     # making the result into 2 Dict ready to be converted to Dataframe
-    sorteddictionairy = dict(reversed(sorted(dictionnaire.items(), key=lambda item: item[1])))
-    nom = sorteddictionairy.keys()
-    nb_occu = sorteddictionairy.values()
+    sorted_dictionary = dict(reversed(sorted(dictionary.items(), key=lambda item: item[1])))
+    nom = sorted_dictionary.keys()
+    nb_occu = sorted_dictionary.values()
     taille_voca = str(len(nom))
 
-    dico_final = {'Lemme' : nom, "Nombre d'occurence" : nb_occu}
+    dico_final = {'Lemme' : nom, "Number of occurrence" : nb_occu}
 
-    donne_final = {'id': id_list, 'occurence': phrase, 'lemma': lemm,'POS': POSTAGS,
+    donne_final = {'id': id_list, 'participant_id': participant_ids, 'occurrence': sentence, 
+                   'lemma': lemm,'POS': POSTAGS,
                     'score_hyper': hyper, 'score_valance': val, 'score_imagea': imag, 
-                    'phonetic': phon,'pattern': patterns, 'freq_lem_film' : fq_film, 'freq_lem_livre' : fq_livre, 'freq_overheard' : fq_other, 'age': age}
+                    'phonetic': phon,'pattern': patterns, 'freq_lem_film' : fq_film, 'freq_lem_livre' : fq_livre, 'freq_overheard' : fq_other,'mlu' : mlus, 'age': age}
 
 
     #make resulting Dict to DataFrame
@@ -385,7 +399,7 @@ def annotating(data_path,token_path):
     type_match = {'CLAN': [], 'lex3': [], 'fan': [], 'semQc': [], 'wordnet': []}
 
     # getting the matching word for dico
-    for noun in dictionnaire:
+    for noun in dictionary:
         type_match['CLAN'].append(noun)
         if noun in lex3_dic:
             type_match['lex3'].append(noun)
@@ -420,25 +434,49 @@ def annotating(data_path,token_path):
 
 run_as_test = False
 saving = False
-save_name = 'french_corpa_parsed1.tsv'
+save_name = 'annotated_french_corpa1.tsv'
 
 if run_as_test == True:
-    token_path = 'A://Maitrise-analyse/results/french_corpa_token1.tsv'
-    data_path = 'A://Maitrise-analyse/data'
-    datafinal, data_dico_final, overheard_dico, param = annotating(data_path,token_path)
+    token_path = '/Users/zikfle/Documents/Maitrise-analyse/results/french_corpa_token1.tsv'
+    result_folder_location = '/Users/zikfle/Documents/Maitrise-analyse/results'
+    data_folder_location = "/Users/zikfle/Documents/Maitrise-analyse/data"
+    datafinal, data_dico_final, overheard_dico, param = annotating(data_folder_location,token_path)
 
     if saving == True:
         print('---------------------------------------------------------')
-        print('Saving results')
+        print('Saving annotation results')
         print('---------------------------------------------------------')
-        #saving the result
+        out_file = os.path.join(result_folder_location, save_name)
+        if os.path.exists(out_file):
+            #  Ask the user if we should overwrite it
+            answer = input(f"File '{out_file}' already exists. Overwrite? (y/n): ").strip().lower()
+            if not answer.startswith('y'):
+                print("Skipping save – user declined to overwrite.")
+                # Optionally exit or simply skip the save step
+                # sys.exit(0)   # if you really want to abort the script
+            else:
+                # User consented – proceed with overwrite
+                datafinal.to_csv(out_file, sep='\t', encoding='utf-8')
+                print('-' * 50)
+                print('Saving successful')
+                print('-' * 50)
+        else:
+            datafinal.to_csv(out_file, sep='\t', encoding='utf-8')
+
+            print('---------------------------------------------------------')
+            print('Saving successful')
+            print('---------------------------------------------------------')
+        #saving overheard and child_dico
         with open('log.txt', "w") as f:
             f.write(param)
-        datafinal.to_csv('annotated_french_corpa1.tsv', sep = '\t', encoding='utf-8')
         data_dico_final.to_csv('child_dico1.tsv', sep = '\t', encoding='utf-8')
         overheard_dico.to_csv('over_dico1.tsv', sep = '\t', encoding='utf-8')
 
 
         print('---------------------------------------------------------')
-        print('Saving successful')
+        print('Saving param successful')
+        print('---------------------------------------------------------')
+    else:
+        print('---------------------------------------------------------')
+        print('Saving set to false')
         print('---------------------------------------------------------')
