@@ -28,30 +28,37 @@ def save_string_to_file(path, string):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-data_folder_location = '/Users/zikfle/Documents/Maitrise-analyse/data'
-raw_data_folder_location = '/Users/zikfle/Documents/Maitrise-analyse/data/French-Corpa'
-result_folder_location = '/Users/zikfle/Documents/Maitrise-analyse/results'
+doc_path = '/Users/zikfle/Documents/Maitrise-analyse'
+parsed_file_name = 'french_corpa_parsed.csv'
+tokenized_file_name = 'french_corpa_token.csv'
+annotated_file_name = 'french_corpa_annotated.csv'
+child_dico_name = 'child_dico.csv'
+over_dico_name = 'over_dico.csv'
 
-parsed_path = '/Users/zikfle/Documents/Maitrise-analyse/results/french_corpa_parsed1.tsv'
-token_path = '/Users/zikfle/Documents/Maitrise-analyse/results/french_corpa_token1.tsv'
+data_folder_location = os.path.join(doc_path,'data')
+raw_data_folder_location = os.path.join(doc_path,'data/French-Corpa')
+result_folder_location = os.path.join(doc_path,'results')
+
+parsed_path = os.path.join(doc_path,'results',parsed_file_name)
+token_path = os.path.join(doc_path,'results',tokenized_file_name)
 
 parsing = True
 tokenization = True
 annotation = True
-name_of_version = 'Version 1'
+name_of_version = 'Version 2'
 
 if parsing == True:
     parsed_data = parser.parse_chat_folder(raw_data_folder_location)
-    parsed_path = ctm_saver.safe_save(parsed_data,result_folder_location,'french_corpa_parsed1.tsv',index=True)
+    parsed_path = ctm_saver.safe_save(parsed_data,result_folder_location,parsed_file_name, sep = ",",index=True)
 
 if tokenization == True:
     token_data = tokenizer.parse_token(parsed_path)
-    token_path = ctm_saver.safe_save(token_data,result_folder_location,'french_corpa_token1.tsv',index=True)
+    token_path = ctm_saver.safe_save(token_data,result_folder_location,tokenized_file_name,index=True)
 
 if annotation == True:
     datafinal, data_dico_final, overheard_dico, param = annotator.annotating(data_folder_location,token_path)
-    annotated_path = ctm_saver.safe_save(datafinal,result_folder_location,'french_corpa_annotated1.tsv')
-    child_dico_path = ctm_saver.safe_save(data_dico_final,result_folder_location,'child_dico1.tsv')
-    over_dico_path = ctm_saver.safe_save(overheard_dico,result_folder_location,'over_dico1.tsv')
+    annotated_path = ctm_saver.safe_save(datafinal,result_folder_location,annotated_file_name, sep = ",")
+    child_dico_path = ctm_saver.safe_save(data_dico_final,result_folder_location,child_dico_name, sep = ",")
+    over_dico_path = ctm_saver.safe_save(overheard_dico,result_folder_location,over_dico_name, sep = ",")
     log = f'####################\n{name_of_version}\n####################\n\nparam\n'''
-    save_string_to_file(os.path.join(result_folder_location,'log.txt'), log)
+    save_string_to_file(os.path.join(result_folder_location,f'log{name_of_version}.txt'), log)

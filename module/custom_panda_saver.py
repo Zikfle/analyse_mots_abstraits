@@ -1,32 +1,12 @@
-# ------------------------------------------------------------------
-# safe_saving.py
-# ------------------------------------------------------------------
-"""
-Utility that writes a Pandas (or Pandas‑compatible) DataFrame to disk
-only after confirming that the target file can be overwritten.
-
-The function signature is deliberately minimal:
-
-    safe_save(dataframe, output_path, file_name, **kwargs)
-
-* `dataframe` – must be a pandas DataFrame (or an object that offers a
-  ``to_csv`` method).  A TypeError is raised if this is not the case.
-* `output_path` – directory (string or Path) where the file should live.
-* `file_name`   – file name (string, no path component).
-
-Optional keyword arguments are forwarded directly to
-``dataframe.to_csv`` (sep, encoding, header, index, …).
-"""
-
 from pathlib import Path
 import sys
-from typing import Any, Dict, Tuple, Optional
+from typing import Any
+from datetime import datetime
+import shutil
+
 
 def _is_dataframe_like(obj: Any) -> bool:
-    """
-    Very small helper – returns True if *obj* looks like a DataFrame.
-    The test is purposely lightweight: it checks for a ``to_csv`` method.
-    """
+    """Return True if obj looks like a DataFrame (has a to_csv method)."""
     return hasattr(obj, "to_csv") and callable(obj.to_csv)
 
 
@@ -35,75 +15,60 @@ def safe_save(
     output_path: str,
     file_name: str,
     *,
-    sep: str = "\t",
+    sep: str = ",",
     encoding: str = "utf-8",
     mode: str = "w",
     header: bool = True,
     index: bool = False,
     **kwargs,
-) -> bool:
+) -> Path | None:
     """
-    Write *dataframe* to a CSV/TSV file, prompting the user before
-    overwriting an existing file.
+    Write dataframe to a CSV file safely with optional backup.
 
-    Parameters
-    ----------
-    dataframe : Any
-        Pandas DataFrame (or object that implements ``to_csv``).
-    output_path : str or Path
-        Directory where the file should be written.
-    file_name : str
-        File name (no directory component).
-    sep : str, optional
-        Field separator – defaults to tab.
-    encoding : str, optional
-        Text encoding – defaults to UTF‑8.
-    mode : str, optional
-        File mode – ``"w"`` (write) or ``"a"`` (append).  Default: ``"w"``.
-    header : bool, optional
-        Whether to write column names.  Default: ``True``.
-    index : bool, optional
-        Whether to write row indices.  Default: ``False``.
-    **kwargs
-        Any other keyword arguments forwarded to ``dataframe.to_csv``.
+    If the file already exists, the user is prompted to either:
+        - Overwrite it
+        - Backup the existing file before writing
+        - Cancel the operation
+
     Returns
     -------
-    bool
-        ``True`` if the file was written, ``False`` if the operation was
-        aborted or failed.
+    Path | None
+        Path of the file that was written, or None if operation was aborted.
     """
 
-    # ------------------------------------------------------------------
-    # 1️⃣  Validate the first argument
-    # ------------------------------------------------------------------
+    # 1️⃣ Validate dataframe
     if not _is_dataframe_like(dataframe):
         raise TypeError(
-            "First argument must be a pandas DataFrame (or an object that implements `to_csv`)."
+            "First argument must be a pandas DataFrame (or an object with `to_csv`)."
         )
 
-    # ------------------------------------------------------------------
-    # 2️⃣  Resolve the full file path
-    # ------------------------------------------------------------------
+    # 2️⃣ Prepare output directory
     out_dir = Path(output_path).expanduser().resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / file_name
 
-    # Create the directory if it does not exist
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # ------------------------------------------------------------------
-    # 3️⃣  Prompt the user if the file already exists
-    # ------------------------------------------------------------------
+    # 3️⃣ Handle existing file
     if out_file.exists():
         answer = input(
-            f"File '{out_file}' already exists. Overwrite? (y/n): "
+            f"File '{out_file}' already exists. Overwrite (o), backup (b), or cancel (c)? [o/b/c]: "
         ).strip().lower()
-        if not answer.startswith("y"):
-            print("Skipping save – user declined to overwrite.")
-            return False  # No write performed
 
-    # ------------------------------------------------------------------
-    # 4️⃣  Attempt the write operation
-    # ------------------------------------------------------------------
+        if answer.startswith("b"):  # Backup
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_file = out_dir / f"{out_file.stem}_backup_{timestamp}{out_file.suffix}"
+            try:
+                shutil.move(str(out_file), str(backup_file))
+                print(f"💾 Existing file moved to backup: {backup_file}")
+            except Exception as exc:
+                print(f"❌ Failed to backup existing file: {exc}", file=sys.stderr)
+                return None
+        elif answer.startswith("o"):  # Overwrite
+            pass  # Nothing extra needed
+        else:
+            print("❌ Skipping save – operation cancelled.")
+            return None
+
+    # 4️⃣ Write the new file
     try:
         dataframe.to_csv(
             out_file,
@@ -116,7 +81,7 @@ def safe_save(
         )
     except Exception as exc:
         print(f"❌ Error while writing '{out_file}': {exc}", file=sys.stderr)
-        return False
+        return None
 
     print(f"✅ File written to: {out_file}")
     return out_file

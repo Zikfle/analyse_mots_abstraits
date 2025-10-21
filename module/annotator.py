@@ -23,6 +23,7 @@ import nltk #for using Wordnet
 nltk.download('omw-1.4') #making sure Wordnet is installed
 from nltk.corpus import wordnet
 import statistics
+from collections import Counter
 
 # ---------------------------------------------------------
 # Fonctions
@@ -158,6 +159,45 @@ def get_freq(lemma:str,lex3_dic,dictionary_other):
     all_freq = [freq_film,freq_livre,freq_other]
     return all_freq
 
+def hdd(text):
+	#requires Counter import
+	def choose(n, k): #calculate binomial
+		"""
+		A fast way to calculate binomial coefficients by Andrew Dalke (contrib).
+		"""
+		if 0 <= k <= n:
+			ntok = 1
+			ktok = 1
+			for t in range(1, min(k, n - k) + 1): #this was changed to "range" from "xrange" for py3
+				ntok *= n
+				ktok *= t
+				n -= 1
+			return ntok // ktok
+		else:
+			return 0
+
+	def hyper(successes, sample_size, population_size, freq): #calculate hypergeometric distribution
+		#probability a word will occur at least once in a sample of a particular size
+		try:
+			prob_1 = 1.0 - (float((choose(freq, successes) * choose((population_size - freq),(sample_size - successes)))) / float(choose(population_size, sample_size)))
+			prob_1 = prob_1 * (1/sample_size)
+		except ZeroDivisionError:
+			prob_1 = 0
+			
+		return prob_1
+
+	prob_sum = 0.0
+	ntokens = len(text)
+	types_list = list(set(text))
+	frequency_dict = Counter(text)
+
+	for items in types_list:
+		prob = hyper(0,42,ntokens,frequency_dict[items]) #random sample is 42 items in length
+		prob_sum += prob
+
+	return prob_sum
+
+
 def annotating(data_path,token_path):
 
     # ---------------------------------------------------------
@@ -165,9 +205,9 @@ def annotating(data_path,token_path):
     # ---------------------------------------------------------
 
     #import the main corpus datafile
-    df = pd.read_csv(token_path, sep = '\t', encoding='utf-8')
-    #print(df.columns)
-
+    df = pd.read_csv(token_path, sep = ',', encoding='utf-8')
+    print(df.columns)
+    print(df)
     #create a list of all speaker_role
     all_role = df['role'].unique()
     #print(all_role)
@@ -234,7 +274,7 @@ def annotating(data_path,token_path):
     dictionary = {}
     dictionary_other = {}
 
-    id_list,participant_ids,sentence,tok,lemm,n_tok,POSTAGS,hyper,val,imag,phon,patterns,n_syllable,fq_livre,fq_film,fq_other,mlus,age = [],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
+    id_list,participant_ids,sentence,tok,lemm,n_tok,POSTAGS,hyper,val,imag,phon,patterns,n_syllable,fq_livre,fq_film,fq_other,mlus,vocds,age = [],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
 
     stopword = ['xxx','x', 'xx', 'www' , 'yyy' , 'zzz','-', 'qqq',
                 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','ə','ɛ','ø']
@@ -273,11 +313,7 @@ def annotating(data_path,token_path):
                     dictionary_other[lemme] += 1
 
     # calculating per million frequency of the overheard speech
-
-    for word in dictionary_other:
-        #dictionary_other[word] = math.log10(dictionary_other[word]/n_other_token)
-        dictionary_other[word] = (dictionary_other[word]/n_other_token)*1000000
-
+    dictionary_other = {word: (nb / n_other_token) * 1000000 for word, nb in dictionary_other.items()}
 
 
     sorted_dictionary_other = dict(reversed(sorted(dictionary_other.items(), key=lambda item: item[1])))
@@ -287,12 +323,36 @@ def annotating(data_path,token_path):
     overheard_dico = pd.DataFrame(dico_other_final)
 
     print('---------------------------------------------------------')
-    print('Calculating mlu per participant')
+    print('Calculating mlu and VocD per participant')
     print('---------------------------------------------------------')
 
     mlu_dict = df.groupby(['participant_id', 'transcript_id'])['n_token'].mean().to_dict()
     #print(mlu_dict)
+    
+    vocd_dict = {}
 
+    individual_case = {}
+    for key in tqdm(mlu_dict.keys(),desc='Collating each individual case as bags of words '): # iterrate over individual case
+        subset = df[(df['participant_id'] == key[0]) & (df['transcript_id'] == key[1])]
+        transcript_lemma = subset['lemme'].tolist()
+        transcript_pos = subset['POS'].tolist()
+        individual_case[key] = []
+        for lemma_list, pos_list in zip(transcript_lemma,transcript_pos): # iterrate over each lemmatized individual case
+            lemma_list = ast.literal_eval(lemma_list)
+            pos_list = ast.literal_eval(pos_list)
+            for lemma,pos in zip(lemma_list,pos_list):
+                if pos != 'X' and pos != 'cm':
+                    individual_case[key].append(lemma) # collate each lemma in a list for each individual case
+
+    for key, value in tqdm(individual_case.items(),desc='Computing hdd for each individual case '):
+        #print(key)
+        #print(len(value))
+        if len(value) < 50:
+            vocd_dict[key] = None
+        else:
+            vocd = hdd(value)
+            vocd_dict[key] = vocd
+        
     print('---------------------------------------------------------')
     print('Annotating hyperonymy, valence, imageability, phonetic, pattern ')
     print('counting the occurrence of each lemma in a dic')
@@ -311,6 +371,7 @@ def annotating(data_path,token_path):
         n_token = int(row['n_token'])
         child_age = row['age']
         mlu = mlu_dict[(float(participant_id), float(transcript_id))]
+        vocd = vocd_dict[(float(participant_id), float(transcript_id))]
         for idx, lemme in enumerate(lemsents): #iterate over all word in tokenized sentence
             n_child_token += 1
             lemme = str(lemsents[idx]).lower()
@@ -356,6 +417,7 @@ def annotating(data_path,token_path):
                 fq_livre.append(livre)
                 fq_other.append(other)
                 mlus.append(mlu)
+                vocds.append(vocd)
                 age.append(child_age)
             #calculate the matching score for Dict
             occ_match['nb_token'] += 1 #count number of token
@@ -377,7 +439,8 @@ def annotating(data_path,token_path):
                     dictionary[lemme] = 1
                 else:
                     dictionary[lemme] += 1
-
+    # making Noun dict on a frequency over / million word
+    dictionary = {lemme: (nb / n_child_token) * 1000000 for lemme, nb in dictionary.items()}
     # making the result into 2 Dict ready to be converted to Dataframe
     sorted_dictionary = dict(reversed(sorted(dictionary.items(), key=lambda item: item[1])))
     nom = sorted_dictionary.keys()
@@ -389,7 +452,7 @@ def annotating(data_path,token_path):
     donne_final = {'id': id_list, 'participant_id': participant_ids, 'occurrence': sentence, 
                    'lemma': lemm,'POS': POSTAGS,
                     'score_hyper': hyper, 'score_valance': val, 'score_imagea': imag, 
-                    'phonetic': phon,'pattern': patterns, 'freq_lem_film' : fq_film, 'freq_lem_livre' : fq_livre, 'freq_overheard' : fq_other,'mlu' : mlus, 'age': age}
+                    'phonetic': phon,'pattern': patterns, 'freq_lem_film' : fq_film, 'freq_lem_livre' : fq_livre, 'freq_overheard' : fq_other,'mlu' : mlus,'HDD' : vocds, 'age': age}
 
 
     #make resulting Dict to DataFrame
@@ -432,12 +495,12 @@ def annotating(data_path,token_path):
 # Param
 # ---------------------------------------------------------
 
-run_as_test = False
+run_as_test = True
 saving = False
-save_name = 'annotated_french_corpa1.tsv'
+save_name = 'annotated_french_corpa1.csv'
 
 if run_as_test == True:
-    token_path = '/Users/zikfle/Documents/Maitrise-analyse/results/french_corpa_token1.tsv'
+    token_path = '/Users/zikfle/Documents/Maitrise-analyse/results/french_corpa_token1.csv'
     result_folder_location = '/Users/zikfle/Documents/Maitrise-analyse/results'
     data_folder_location = "/Users/zikfle/Documents/Maitrise-analyse/data"
     datafinal, data_dico_final, overheard_dico, param = annotating(data_folder_location,token_path)

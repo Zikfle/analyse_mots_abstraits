@@ -3,7 +3,7 @@
 
 > *“Studying how children learn abstract nouns such as *democracy*, *liberty*, *freedom* and other conceptual words.”*
 
- This repository contains the data‑analysis portion of the master’s memoir project. It processes the [FrenchCorpa](https://talkbank.org/childes/access/French/) dataset from [CHILDES](https://talkbank.org/childes/) to annotate the instance of noun in child speech where I extract the tokenisation and part‑of‑speech tags form CLAN analysis. I then produce an annotation tsv file that marks all detected nouns with it's associated annotation with various method (lemma, POS, hyperonymy, valance, imageability, phonetic form, phonetic pattern, frequency in adult speech, frequency in overheard speech, age). 
+ This repository contains the data‑analysis portion of the master’s memoir project. It processes the [FrenchCorpa](https://talkbank.org/childes/access/French/) dataset from [CHILDES](https://talkbank.org/childes/) to annotate the instance of noun in child speech where I extract the tokenisation and part‑of‑speech tags form CLAN analysis. I then produce an annotation .csv file that marks all detected nouns with it's associated annotation with various method (lemma, POS, hyperonymy, valance, imageability, phonetic form, phonetic pattern, frequency in adult speech, frequency in overheard speech, age). 
 
 ## Table of Contents
 
@@ -27,9 +27,9 @@ Abstract nouns are concepts that cannot be directly perceived by the senses (e.g
 Our dataset contains child‑spoken transcripts annotated by linguistic experts.  
 
 The **data‑analysis** part of the project does three things:
-1. **Parse the preprocessed dataset in a large .tsv file** – read all the .cha preprocessed .cha file in a folder and save the data into a .tsv file where each lines is an utterance with all it's metadata (role, age ...) in a raw fashion.
-2. **Extract Tokenisation & POS‑tagging from CLAN** – read the .tsv dataset and parse the %mor information into different column (lemma,POS,flexion).
-3. **Annotate the nouns** – read all the lines and create a new .tsv dataset where each line is a flagged noun and associate to that noun (from it's lemma) the relevant variable value (hyperonymy, valance, imageability...)
+1. **Parse the preprocessed dataset in a large .csv file** – read all the preprocessed .cha file in a folder and save the data into a .csv file where each lines is an utterance with all it's metadata (role, age ...) in a raw fashion.
+2. **Extract Tokenisation & POS‑tagging from CLAN** – read the .csv dataset and parse the %mor information into different column (lemma,POS,flexion).
+3. **Annotate the nouns** – read all the lines and create a new .csv dataset where each line is a flagged noun and associate to that noun (from it's lemma) the relevant variable value (hyperonymy, valance, imageability...)
 
 
 **Table 1 – Overview of the variables studied in the memoir**
@@ -88,7 +88,7 @@ The **data‑analysis** part of the project does three things:
 .
 ├── data #The data folder is placed outside the project repo
 │   ├── data_fan_valence.csv
-│   ├── data_lexique382.tsv
+│   ├── data_lexique382.csv
 │   ├── data_semantiqc_imagea.csv
 │   └── French-Corpa
 │       ├── Champaud010906x.cha
@@ -112,16 +112,20 @@ The **data‑analysis** part of the project does three things:
 │   └── TODO.md
 └── results #Where the results will be saved
     ├── log.txt
-    ├── french_corpa_parsed1.tsv
-    ├── french_corpa_token1.tsv
-    ├── french_corpa_annotated1.tsv
-    ├── child_dico1.tsv
-    └── over_dico1.tsv
+    ├── french_corpa_parsed1.csv
+    ├── french_corpa_token1.csv
+    ├── french_corpa_annotated1.csv
+    ├── child_dico1.csv
+    └── over_dico1.csv
 ```
 
 ---
 
-## Setup ( to be updated)
+## Setup
+
+```python
+doc_path = '/Users/user_name/Documents/Maitrise-analyse' # <- In the main.py file change this line to you current file project directory
+```
 
 The project is written in **Python 3.9.21**.  
 We recommend using a virtual environment (venv or conda).
@@ -152,16 +156,15 @@ nltk==3.9.1
 numpy==2.3.3
 pandas==2.3.2
 regex==2024.11.6
-spacy==3.8.2
-torch==2.7.0+cu128
 tqdm==4.67.1
 ```
-**Other optional dependencies**
+**Other optional dependencies (for old_script)**
 ``` 
 pylangacq==0.19.1
 regex==2024.11.6
 rpy2==3.6.3
 spacy==3.8.2
+torch==2.7.0+cu128
 spacy_syllables==3.0.2
 ``` 
 
@@ -172,9 +175,9 @@ spacy_syllables==3.0.2
 
 | Phase | What it does | Output file(s) |
 |-------|--------------|----------------|
-| **Parsing** | Reads every `.chat` file in *raw_data_folder_location*, converts the raw dialogue into a tidy TSV. | `french_corpa_parsed1.tsv` |
-| **Tokenisation** | Splits each utterance into individual tokens. | `french_corpa_token1.tsv` |
-| **Annotation** | Applies the annotator to the tokenized data, producing a fully annotated corpus and two dictionaries. | `french_corpa_annotated1.tsv`, `child_dico1.tsv`, `over_dico1.tsv` |
+| **Parsing** | Reads every `.cha` file in *raw_data_folder_location*, converts the raw dialogue into a dataframe.| `french_corpa_parsed1.csv` |
+| **Tokenisation** | From the parsed dataframe, splits each utterance into individual tokens. | `french_corpa_token1.csv` |
+| **Annotation** | Applies the annotator to the tokenized data, producing a fully annotated corpus and two dictionaries. | `french_corpa_annotated1.csv`, `child_dico1.csv`, `over_dico1.csv` |
 
 All results are stored under *result_folder_location*, and a `log.txt` file is appended with a short description of the run.
 
@@ -213,21 +216,21 @@ python main_script.py
 
 > On Windows you may need to use `py` or `python3` instead of `python` depending on your installation.
 
-The script will create (or overwrite) the TSV files in the *results* folder. Any errors during the run are printed to the console.
+The script will create (or overwrite) the csv files in the *results* folder. Any errors during the run are printed to the console.
 
 ---
 
 ### 3.  Inspect the results
 
-Open the resulting TSV files with a spreadsheet program or a text editor:
+Open the resulting csv files with a spreadsheet program or a text editor:
 
 | File | What you’ll see |
 |------|-----------------|
-| `french_corpa_parsed1.tsv` | Raw dialogue converted to a tab‑separated format. |
-| `french_corpa_token1.tsv` | Same data, but each utterance split into tokens. |
-| `french_corpa_annotated1.tsv` | Tokens annotated with POS tags, lemmas, etc. |
-| `child_dico1.tsv` | Dictionary of child‑used tokens. |
-| `over_dico1.tsv` | Tokens that were not found in the child dictionary. |
+| `french_corpa_parsed1.csv` | Raw dialogue converted to a tab‑separated format. |
+| `french_corpa_token1.csv` | Same data, but each utterance split into tokens. |
+| `french_corpa_annotated1.csv` | Tokens annotated with POS tags, lemmas, etc. |
+| `child_dico1.csv` | Dictionary of child‑used tokens. |
+| `over_dico1.csv` | Tokens that were not found in the child dictionary. |
 | `log.txt` | Header with `name_of_version` and any parameter notes. |
 
 ---
@@ -238,7 +241,7 @@ Open the resulting TSV files with a spreadsheet program or a text editor:
 |---------|--------------|-----------|
 | `ModuleNotFoundError: No module named 'module.childes_parser'` | The script isn’t being run from the project root. | Run `python main_script.py` from the folder that contains the `module` package. |
 | `Permissions error when writing files` | The result folder is read‑only or you lack write rights. | Verify that you have write permissions, or change *result_folder_location* to a writable path. |
-| `Empty or truncated TSV files` | One of the earlier steps failed silently. | Check the console output; the helper `save_string_to_file` prints any exceptions. |
+| `Empty or truncated csv files` | One of the earlier steps failed silently. | Check the console output; the helper `save_string_to_file` prints any exceptions. |
 
 ---
 
@@ -250,7 +253,7 @@ id	occurence	lemma	POS	score_hyper	score_valance	score_imagea	phonetic    patter
 ...
 ```
 
-The annotated file (`french_corpa_annotated1.tsv`) can be directly imported into statistical software (R, SPSS, Python) for frequency counts, chi‑square tests, or regression modelling.
+The annotated file (`french_corpa_annotated1.csv`) can be directly imported into statistical software (R, SPSS, Python) for frequency counts, chi‑square tests, or regression modelling.
 
 ---
  

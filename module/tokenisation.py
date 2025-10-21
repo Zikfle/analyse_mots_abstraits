@@ -57,7 +57,7 @@ def parse_token(data_path: str):
     print(f'Reading the DataFrame form {data_path}')
     print('---------------------------------------------------------')
     #import the main corpus datafile
-    df = pd.read_csv(data_path, sep = '\t', encoding='utf-8')
+    df = pd.read_csv(data_path, sep = ',', encoding='utf-8')
     #df.index.name = 'id'
     #print(df.columns)
 
@@ -118,12 +118,12 @@ def parse_token(data_path: str):
 
 run_as_test = False
 saving = False
-save_name = 'french_corpa_token1.tsv'
+save_name = 'french_corpa_token1.csv'
 
 # run main function
 if run_as_test == True:
 
-    data_path = 'A://Maitrise-analyse/results/french_corpa_parsed1.tsv'
+    data_path = 'A://Maitrise-analyse/results/french_corpa_parsed1.csv'
     result_folder_location = 'A://Maitrise-analyse/results'
     datafinal = parse_token(data_path)
 
@@ -143,12 +143,12 @@ if run_as_test == True:
                 # sys.exit(0)   # if you really want to abort the script
             else:
                 # User consented – proceed with overwrite
-                datafinal.to_csv(out_file, sep='\t', encoding='utf-8')
+                datafinal.to_csv(out_file, sep=',', encoding='utf-8')
                 print('---------------------------------------------------------')
                 print('Saving successful')
                 print('---------------------------------------------------------')
         else:
-            datafinal.to_csv(out_file, sep='\t', encoding='utf-8')
+            datafinal.to_csv(out_file, sep=',', encoding='utf-8')
 
             print('---------------------------------------------------------')
             print('Saving successful')

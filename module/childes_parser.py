@@ -12,53 +12,66 @@ from tqdm import tqdm
 import pandas as pd
 import statistics
 
-def parse_metadata(transcript,filename,transcript_id,participant_ids):
-    rawmetadata = []
-    metadata = {'participants' : [] , 'IDS' : []}
-    for line in transcript:
-        if line[0] == '@':
-            rawmetadata.append(line)
-        if len(line) != 2: # maybe < 2
+def parse_metadata(transcript, filename, transcript_id, participant_ids):
+    # collect all metadata lines
+    raw_metadata = [line for line in transcript if line and line[0].startswith('@')]
+    basic_line = ['@Begin\n','@End\n','@UTF8\n']
+    participants, ids = [], []
+
+    for line in raw_metadata:
+        # Ensure the line has at least 2 elements
+        if len(line) < 2:
+            if line[0] not in basic_line:
+                print(f"⚠️ Skipping a line in {filename} metadata")
+                print('line :', line)
             continue
-        line_type = line[0]
-        content = line[1]
-        if line_type == '@Participants:':
-            metadata['participants'] = content.split(',')
-        if line_type == '@ID:':
-            metadata['IDS'].append(content.split('|')) # should always give a list with 10 element
-    metadata2 = {'codeb' : [] , 'roleb' : [] , 'file_name' : [] , 'transcript_id' : [] ,
-                  'participant_id' : [] , 'lang' : [] , 'corpus' : [] , 'code' : [] , 
-                  'age' : [] , 'sex' : [] , 'group' : [] , 'SES' : [] , 'role' : [] , 
-                 'education' : [] , 'custom' : [], }
-    for idx , participant in enumerate(metadata['participants']):
-        #print(participant)
-        participant = participant.split(' ')
-        #print(participant)
-        # unique_participant = code + corpus
-        unique_participant = str(participant[-2]) + str(metadata['IDS'][idx][1])
-        if unique_participant not in participant_ids:
-            participant_id = len(participant_ids) + 1
-            participant_ids[unique_participant] = participant_id
-        else:
-            participant_id = participant_ids[unique_participant]
-        metadata2['codeb'].append(participant[-2])
-        metadata2['roleb'].append(participant[-1])
-        metadata2['file_name'].append(filename)
-        metadata2['transcript_id'].append(transcript_id)
-        metadata2['participant_id'].append(participant_id)
-        metadata2['lang'].append(metadata['IDS'][idx][0])
-        metadata2['corpus'].append(metadata['IDS'][idx][1])
-        metadata2['code'].append(metadata['IDS'][idx][2])
-        metadata2['age'].append(metadata['IDS'][idx][3])
-        metadata2['sex'].append(metadata['IDS'][idx][4])
-        metadata2['group'].append(metadata['IDS'][idx][5])
-        metadata2['SES'].append(metadata['IDS'][idx][6])
-        metadata2['role'].append(metadata['IDS'][idx][7])
-        metadata2['education'].append(metadata['IDS'][idx][8])
-        metadata2['custom'].append(metadata['IDS'][idx][9])
-        
-            
-    return (metadata2, participant_ids)
+        tag, content = line[0], line[1]
+        if tag == '@Participants:':
+            participants = [p.strip() for p in content.split(',')]
+        elif tag == '@ID:':
+            ids.append(content.split('|'))  # should have 10 elements
+
+    # prepare metadata dictionary
+    meta = {
+        'codeb': [], 'roleb': [], 'file_name': [], 'transcript_id': [],
+        'participant_id': [], 'lang': [], 'corpus': [], 'code': [],
+        'age': [], 'sex': [], 'group': [], 'SES': [], 'role': [],
+        'education': [], 'custom': []
+    }
+
+    for idx, participant in enumerate(participants):
+        parts = participant.split()
+        if len(parts) < 2 or idx >= len(ids):
+            continue  # skip malformed or unmatched entries
+
+        unique_key = parts[-2] + ids[idx][1]
+        if unique_key not in participant_ids:
+            participant_ids[unique_key] = len(participant_ids) + 1
+        participant_id = participant_ids[unique_key]
+
+        meta['codeb'].append(parts[-2])
+        meta['roleb'].append(parts[-1])
+        meta['file_name'].append(filename)
+        meta['transcript_id'].append(transcript_id)
+        meta['participant_id'].append(participant_id)
+
+        id_fields = ids[idx] + [''] * (10 - len(ids[idx]))  # pad if missing
+        (lang, corpus, code, age, sex, group, ses, role, edu, custom) = id_fields[:10]
+
+        meta['lang'].append(lang)
+        meta['corpus'].append(corpus)
+        meta['code'].append(code)
+        meta['age'].append(age)
+        meta['sex'].append(sex)
+        meta['group'].append(group)
+        meta['SES'].append(ses)
+        meta['role'].append(role)
+        meta['education'].append(edu)
+        meta['custom'].append(custom)
+
+    return meta, participant_ids
+
+
 
 def age_to_days(age):
     days = None
@@ -84,121 +97,76 @@ def age_to_days(age):
         #print('age : ',age)
     return days
 
-def parse_lines(transcript,metadata,transcript_name):
-    code = ''
-    utterance = ''
-    gra = ''
-    mor = ''
-    pho = ''
-    act = ''
-    sit = ''
-    com = ''
-    oldtype = '*'
+def parse_lines(transcript, metadata, transcript_name):
+    def get_target_age(meta):
+        if 'Target_Child' not in meta['role']:
+            return None
+        ages = [age_to_days(meta['age'][i]) for i, r in enumerate(meta['role']) if r == 'Target_Child' and meta['age'][i]]
+        return statistics.mean(ages) if ages else None
 
-    transcript_dict = {'transcript_name' : [],'transcript_id': [], 'corpus' : [], 
-                       'transcript_order': [], 'participant_id': [], 'code': [], 
-                       'role': [],'age': [], 'target_age': [], 'utterance': [],
-                       'mor': [],'gra': [], 'pho': [],'act': [], 'com': [],'sit': []}
-    id_line = 1
-    #calculation of the mean age of target_child(s) in the transcript
-    if 'Target_Child' in metadata['role']:
-        targets = [i for i, x in enumerate(metadata['role']) if x == 'Target_Child']
-        ages = []
-        for target in targets:
-            target_age = metadata['age'][target]
-            target_age = age_to_days(target_age)
-            if target_age != '':
-                ages.append(target_age)
-        try:
-            target_age = statistics.mean(ages)
-        except:
-            target_age = None
-    else:
-        target_age = None
-    for line in transcript:
+    # List and dict
+    data, current = [], {'utterance': '', 'gra': '', 'mor': '', 'pho': '', 'act': '', 'com': '', 'sit': ''}
+    code, oldtype, target_age = '', '*', get_target_age(metadata)
+    tag_fields = {'%gra:','%mor:','%pho:','%act:','%com:','%sit:'}
+    id_line = 0
+
+    for type_tag, content in (l for l in transcript if len(l) == 2):
         id_line += 1
-        if len(line) != 2:
+        # continuation line
+        if not type_tag:
+            if oldtype == '*': current['utterance'] += ' ' + content
+            elif oldtype in tag_fields: current[oldtype[1:-1]] += ' ' + content
             continue
-        type = line[0]
-        content = line[1]
-        if type == '':
-            if oldtype == '*':
-                utterance = utterance + ' ' + content
-            if oldtype == '%gra:':
-                gra = gra + ' ' + content
-            if oldtype == '%mor:':
-                mor = mor + ' ' + content
-            if oldtype == '%pho:':
-                pho = pho + ' ' + content
-            if oldtype == '%act:':
-                act = act + ' ' + content
-            if oldtype == '%com:':
-                com = com + ' ' + content
-            if oldtype == '%sit:':
-                sit = sit + ' ' + content
-        else:
-            if (type[0] == '*') and (len(utterance) > 1):
-                for idx, codeb in enumerate(metadata['code']):
-                    if codeb == code:
-                        position = idx
-                        #print(metadata['transcript_id'])
-                        #print(position)
-                        transcript_id = metadata['transcript_id'][position]
-                        participant_id = metadata['participant_id'][position]
-                        role = metadata['role'][position]
-                        age = metadata['age'][position]
-                        age = age_to_days(age)
-                        corpus = metadata['corpus'][position]
-                        continue
 
-                transcript_dict['transcript_name'].append(transcript_name)
-                transcript_dict['transcript_id'].append(transcript_id)
-                transcript_dict['corpus'].append(corpus)
-                transcript_dict['transcript_order'].append(id_line)
-                transcript_dict['participant_id'].append(participant_id)
-                transcript_dict['code'].append(code)
-                transcript_dict['role'].append(role)
-                transcript_dict['age'].append(age)
-                transcript_dict['target_age'].append(target_age)
-                transcript_dict['utterance'].append(utterance)
-                transcript_dict['mor'].append(mor)
-                transcript_dict['gra'].append(gra)
-                transcript_dict['pho'].append(pho)
-                transcript_dict['act'].append(act)
-                transcript_dict['com'].append(com)
-                transcript_dict['sit'].append(sit)
-                
-                age = ''
-                code = ''
-                utterance = ''
-                gra = ''
-                mor = ''
-                pho = ''
-                act = ''
-                sit = ''
-                com = ''
-                oldtype = '*'
+        # new speaker: save previous utterance
+        if type_tag.startswith('*') and current['utterance']:
+            data.append({'transcript_name': transcript_name, 'code': code, **current})
+            current = {k: '' for k in current}
+        
+        # update current fields
+        if type_tag.startswith('*'):
+            code = type_tag[1:-1]
+            current['utterance'] = content
+        elif type_tag in tag_fields:
+            current[type_tag[1:-1]] = content
+        oldtype = type_tag
 
-            if type[0] == '*':
-                utterance = content
-                code = type[1:-1]
-            if type == '%gra:':
-                gra = content
-            if type == '%mor:':
-                mor = content
-            if type == '%pho:':
-                pho = content
-            if type == '%act:':
-                act = content
-            if type == '%com:':
-                com = content
-            if type == '%sit:':
-                sit = content
-            oldtype = type
+    # save last utterance
+    if current['utterance']:
+        data.append({'transcript_name': transcript_name, 'code': code, **current})
 
-    transcript_df = pd.DataFrame(transcript_dict)
-    return transcript_df
+    # If no utterance found, return empty DataFrame
+    if not data:  # nothing parsed
+        print(f"⚠️ Skipping {transcript_name}: no speaker lines found.")
+        return pd.DataFrame(columns=[
+            'transcript_name', 'transcript_id', 'corpus', 'transcript_order',
+            'participant_id', 'code', 'role', 'age', 'target_age', 'utterance',
+            'mor', 'gra', 'pho', 'act', 'com', 'sit'
+        ])
 
+    # --- Merge metadata ---
+    df = pd.DataFrame(data)
+    meta_df = pd.DataFrame(metadata)
+    ''' # for debugging
+    if len(df) == 0:
+        print(transcript)
+        print("DEBUG:", transcript_name)
+        print("df columns:", df.columns.tolist())
+        print("meta_df columns:", meta_df.columns.tolist())
+        print("data length:", len(df))
+    '''
+    df = df.merge(meta_df, on='code', how='left')
+    df['target_age'] = target_age
+    df['transcript_order'] = range(1, len(df) + 1)
+    df['age'] = df['age'].apply(age_to_days)
+    ''' # --- For checking the result ---
+
+    for line in transcript:
+        print(line)
+    for utter in df['utterance']:
+        print(utter)
+    '''
+    return df
 
 def parse_chat_folder(data_path):
 
@@ -241,7 +209,12 @@ def parse_chat_folder(data_path):
         parsed_transcript = parse_lines(transcript,metadata,transcript_name)
         all_dfs.append(parsed_transcript)
 
-    final_df = pd.concat(all_dfs, ignore_index=True)
+    # keep only non-empty DataFrames
+    all_dfs = [df for df in all_dfs if not df.empty]
+    if all_dfs:
+        final_df = pd.concat(all_dfs, ignore_index=True)
+    else:
+        final_df = pd.DataFrame()
     final_df.index.name = 'id'
     print(final_df)
     
