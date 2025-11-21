@@ -4,21 +4,19 @@
 
 ### Todo 📋
 
-- [ ] Filter non-noun with lex3?
-
-- [ ] Correct and verify spelling
-- [ ] Verify french -> english
-- [ ] Verify comment
-
 ### In Progress 🔄
 
 - [ ] In the README upadate the usage part
-- [ ] Add runtime to log
-- [ ] Add terminal print to log or param to log
-- [ ] Change name of participant from #numid to name + corpusa
+- [ ] Correct and verify spelling
 
 ### Done ✅
 
+- [x] Verify french -> english 21/11/2025
+- [x] Describe functions 21/11/2025
+- [x] Verify age-day conversion 21/11/2025
+- [x] Add runtime to log 21/11/2025
+- [x] Add terminal print to log or param to log 21/11/2025
+- [x] Change name of participant from #numid to name + corpusa 21/11/2025
 - [x] Make the custum_panda_saver be interactive and option to backup, overrite or cancel 21/10/2025
 - [x] Verify the tokenization parsing -> especially the word repetition (Notting to do since I use the chat tokenisation now) 21/10/2025
 - [x] Repair the last line not parsed + refactor the 2 parsing function 21/10/2025

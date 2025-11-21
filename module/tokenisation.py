@@ -20,6 +20,19 @@ import regex as re
 # ---------------------------------------------------------
 
 def tokenize_chat(morpho):
+    '''
+    Extracting morpho decomposition given by CLAN analysis
+    of one %mor of an utterance
+
+    Parameters
+    ----------
+    A raw %mor line as a string
+
+    Returns
+    -------
+    tree list : 1- a list of lemma, 2- a list of POS
+    and 3- a list of morphological flexion
+    '''
     list_grapheme2 = morpho.split(' ')
     lemma_sent = []
     pos_sent = []
@@ -52,7 +65,19 @@ def tokenize_chat(morpho):
 
 
 def parse_token(data_path: str):
+    '''
+    Take a Dataframe containing .cha transcription line,
+    make tree new columns in that Dataframe (lemma, pos, flexion)
+    from the %mor column.
 
+    Parameters
+    ----------
+    A Dataframe of .cha transcription lines
+
+    Returns
+    -------
+    A Dataframa with tree added column
+    '''
     print('---------------------------------------------------------')
     print(f'Reading the DataFrame form {data_path}')
     print('---------------------------------------------------------')

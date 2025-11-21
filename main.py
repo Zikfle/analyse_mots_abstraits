@@ -11,22 +11,12 @@ import os
 import module.childes_parser as parser
 import module.tokenisation as tokenizer
 import module.annotator as annotator
-
 import module.custom_panda_saver as ctm_saver
+from module.tee_logger import start_capture, get_log, save_string_to_file
 
-def save_string_to_file(path, string):
-    try:
-        # Check if the path is a file or not
-        if os.path.isfile(path):
-            with open(path, 'a') as file:
-                file.write(string + '\n')
-        else:
-            # If it's not a file, create one and add the string
-            with open(path, 'w+') as file:
-                file.write(string + '\n')
+import time
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
+start_capture() # to save console print to log
 
 doc_path = '/Users/zikfle/Documents/Maitrise-analyse'
 parsed_file_name = 'french_corpa_parsed.csv'
@@ -45,7 +35,9 @@ token_path = os.path.join(doc_path,'results',tokenized_file_name)
 parsing = True
 tokenization = True
 annotation = True
-name_of_version = 'Version 2'
+name_of_version = 'version 3'
+
+start_time = time.perf_counter()
 
 if parsing == True:
     parsed_data = parser.parse_chat_folder(raw_data_folder_location)
@@ -60,5 +52,14 @@ if annotation == True:
     annotated_path = ctm_saver.safe_save(datafinal,result_folder_location,annotated_file_name, sep = ",")
     child_dico_path = ctm_saver.safe_save(data_dico_final,result_folder_location,child_dico_name, sep = ",")
     over_dico_path = ctm_saver.safe_save(overheard_dico,result_folder_location,over_dico_name, sep = ",")
-    log = f'####################\n{name_of_version}\n####################\n\nparam\n'''
-    save_string_to_file(os.path.join(result_folder_location,f'log{name_of_version}.txt'), log)
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+    print(f"Elapsed time: {elapsed_time:.1f} seconds")
+    log_contents = get_log()
+    log = f"####################\n{name_of_version}\n####################\n\nparam\n"
+    log = log + log_contents
+    save_string_to_file(os.path.join(result_folder_location,f"log{name_of_version}.txt"), log)
+
+    print('---------------------------------------------------------')
+    print('Done')
+    print('---------------------------------------------------------')

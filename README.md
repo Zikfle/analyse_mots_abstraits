@@ -208,10 +208,10 @@ If you only want to run a specific phase, set the other flags to `False`.
 
 ### 2.  Run the script
 
-From the terminal, navigate to the folder that contains `main_script.py` and execute:
+From the terminal, navigate to the folder that contains `main.py` and execute:
 
 ```bash
-python main_script.py
+python main.py
 ```
 
 > On Windows you may need to use `py` or `python3` instead of `python` depending on your installation.
@@ -226,31 +226,22 @@ Open the resulting csv files with a spreadsheet program or a text editor:
 
 | File | What you’ll see |
 |------|-----------------|
-| `french_corpa_parsed1.csv` | Raw dialogue converted to a tab‑separated format. |
-| `french_corpa_token1.csv` | Same data, but each utterance split into tokens. |
-| `french_corpa_annotated1.csv` | Tokens annotated with POS tags, lemmas, etc. |
+| `french_corpa_parsed1.csv` | Raw dialogue converted to a comma‑separated dataframe format. |
+| `french_corpa_token1.csv` | Same data, but each utterance split into tokens (using the %gra produced by running the CLAN analysis). |
+| `french_corpa_annotated1.csv` | Noun tokens annotated with POS tags, lemmas, etc. |
 | `child_dico1.csv` | Dictionary of child‑used tokens. |
 | `over_dico1.csv` | Tokens that were not found in the child dictionary. |
 | `log.txt` | Header with `name_of_version` and any parameter notes. |
 
 ---
 
-### 4.  Troubleshooting
-
-| Symptom | Likely cause | Quick fix |
-|---------|--------------|-----------|
-| `ModuleNotFoundError: No module named 'module.childes_parser'` | The script isn’t being run from the project root. | Run `python main_script.py` from the folder that contains the `module` package. |
-| `Permissions error when writing files` | The result folder is read‑only or you lack write rights. | Verify that you have write permissions, or change *result_folder_location* to a writable path. |
-| `Empty or truncated csv files` | One of the earlier steps failed silently. | Check the console output; the helper `save_string_to_file` prints any exceptions. |
-
----
 
 ## Output
 ```
-id	occurence	lemma	POS	score_hyper	score_valance	score_imagea	phonetic    pattern	freq_lem_film	freq_lem_livre	freq_overheard	age
-2	la soupe manger veut pas Grégoire .	soupe	n	5.75	5.73	79.76	sup	CVC	32.26	38.04	103.17007754888753	645.5
-2	la soupe manger veut pas Grégoire .	manger	n	1.8333333333333333			mɑ̃ʒe	CV-CV	5.62	4.05	324.0359836373002	645.5
-...
+            id participant_id participant_name                                       occurrence      lemma  ... freq_lem_livre  freq_overheard       mlu       HDD     age
+0            2              1     CHI Champaud              la soupe manger veut pas Grégoire .      soupe  ...          38.04      103.048640  2.125000       NaN   645.5
+...        ...            ...              ...                                              ...        ...  ...            ...             ...       ...       ...     ...
+128563  767546            159         CHI York      ils aiment [/] ils aiment tous les fruits .      fruit  ...          64.05       84.819819  6.161585  0.798731  1572.5
 ```
 
 The annotated file (`french_corpa_annotated1.csv`) can be directly imported into statistical software (R, SPSS, Python) for frequency counts, chi‑square tests, or regression modelling.

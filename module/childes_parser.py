@@ -13,6 +13,20 @@ import pandas as pd
 import statistics
 
 def parse_metadata(transcript, filename, transcript_id, participant_ids):
+    '''
+    Parsing one metadata from one .cha file
+    into a python dict
+    
+    Parameters
+    ----------
+    transcript : 
+    Parameter description
+    
+    Returns
+    -------
+    dict : all the metadata content in a dict
+    dict : all the participant_id from the global parsing
+    '''
     # collect all metadata lines
     raw_metadata = [line for line in transcript if line and line[0].startswith('@')]
     basic_line = ['@Begin\n','@End\n','@UTF8\n']
@@ -34,7 +48,7 @@ def parse_metadata(transcript, filename, transcript_id, participant_ids):
     # prepare metadata dictionary
     meta = {
         'codeb': [], 'roleb': [], 'file_name': [], 'transcript_id': [],
-        'participant_id': [], 'lang': [], 'corpus': [], 'code': [],
+        'participant_id': [], 'participant_name': [], 'lang': [], 'corpus': [], 'code': [],
         'age': [], 'sex': [], 'group': [], 'SES': [], 'role': [],
         'education': [], 'custom': []
     }
@@ -43,17 +57,19 @@ def parse_metadata(transcript, filename, transcript_id, participant_ids):
         parts = participant.split()
         if len(parts) < 2 or idx >= len(ids):
             continue  # skip malformed or unmatched entries
-
-        unique_key = parts[-2] + ids[idx][1]
-        if unique_key not in participant_ids:
-            participant_ids[unique_key] = len(participant_ids) + 1
-        participant_id = participant_ids[unique_key]
-
+        # assign a unique overall corpus participant_id 
+        unique_name = parts[-2] + ' ' + ids[idx][1]
+        
+        if unique_name not in participant_ids:
+            count_id = len(participant_ids) + 1
+            participant_ids[unique_name] = count_id
+        
         meta['codeb'].append(parts[-2])
         meta['roleb'].append(parts[-1])
         meta['file_name'].append(filename)
         meta['transcript_id'].append(transcript_id)
-        meta['participant_id'].append(participant_id)
+        meta['participant_id'].append(participant_ids[unique_name])
+        meta['participant_name'].append(unique_name)
 
         id_fields = ids[idx] + [''] * (10 - len(ids[idx]))  # pad if missing
         (lang, corpus, code, age, sex, group, ses, role, edu, custom) = id_fields[:10]
@@ -74,6 +90,9 @@ def parse_metadata(transcript, filename, transcript_id, participant_ids):
 
 
 def age_to_days(age):
+    '''
+    Converting the CHILDES age fromat (like 1;02;10) to days
+    '''
     days = None
     if type(age) is str and age != '':
         year_month_day = age.split(';')
@@ -98,6 +117,22 @@ def age_to_days(age):
     return days
 
 def parse_lines(transcript, metadata, transcript_name):
+    '''
+    Parsing each lines from a cha. file to dataframe
+    
+    Parameters
+    ----------
+    transcript : a pre processed transcript version of a .cha file, 
+    line by line, and seperated in two part 1- the tag of the line and 
+    2- the content of the line
+    metadata : the metadata of that .cha file as a dict
+    transcript: the file name as a string
+
+    Returns
+    -------
+    df : a dataframe where each line contains the line content and the metadata
+    associated with it's corresponding value
+    '''
     def get_target_age(meta):
         if 'Target_Child' not in meta['role']:
             return None
@@ -169,7 +204,18 @@ def parse_lines(transcript, metadata, transcript_name):
     return df
 
 def parse_chat_folder(data_path):
+    '''
+    Parsing each .cha file in a given folder
+    
+    Parameters
+    ----------
+    data_path : the full folder data_path as a string
 
+    Returns
+    -------
+    df : a dataframe containing all the lines and associated metadata of all
+    the .cha file present in the targeted folder
+    '''
     print('-----------------------------------------------------------')
     print(f'Reading all the cha. files in {data_path} and saving it into a Python Dict')
     print('-----------------------------------------------------------')

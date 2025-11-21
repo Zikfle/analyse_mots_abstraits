@@ -37,8 +37,8 @@ def get_hyperval(lemma:str):
     
     parametre
     ------------
-    :lemma: a lemma (str)
-    :return: the lemma hyperonym value (int) or None
+    lemma: a lemma (str)
+    return: the lemma hyperonym value (int) or None
 
     exemple
     ------------
@@ -72,8 +72,8 @@ def get_sem_val(lemma:str,valence_dic,imagea_dic):
     
     parameter
     ------------
-    :lemma: a lemma (str)
-    :return: a list containing two elements (str or None)
+    lemma: a lemma (str)
+    return: a list containing two elements (str or None)
 
     exemple
     ------------
@@ -89,12 +89,14 @@ def get_sem_val(lemma:str,valence_dic,imagea_dic):
     return [valence,imagea]
 
 def lex3_API_converter(lex_phon):
-    tbl_lex = {'i': 'i', '3': 'ə', '°': '°', 'e': 'e', 'E': 'ɛ', 'A': 'a', 'a': 'a', 
-     'o': 'o', 'O': 'ɔ', 'u': 'u', 'y': 'y', '2': 'ø', '9': 'œ', '@': 'ɑ̃', 
-     '5': 'ɛ̃', '1': 'œ̃', '§': 'ɔ̃', 'p': 'p', 'b': 'b', 't': 't', 'd': 'd', 
-     'k': 'k', 'g': 'g', 'f': 'f', 'v': 'v', 's': 's', 'z': 'z', 'S': 'ʃ', 
-     'Z': 'ʒ', 'm': 'm', 'n': 'n', 'N': 'ɲ', 'G': 'ŋ', 'l': 'l', 'R': 'ʁ', 
-     'j': 'j', 'w': 'w', '8': 'ɥ'}
+    tbl_lex = {
+    'i': 'i', '3': 'ə', '°': '°', 'e': 'e', 'E': 'ɛ', 'A': 'a', 'a': 'a', 
+    'o': 'o', 'O': 'ɔ', 'u': 'u', 'y': 'y', '2': 'ø', '9': 'œ', '@': 'ɑ̃', 
+    '5': 'ɛ̃', '1': 'œ̃', '§': 'ɔ̃', 'p': 'p', 'b': 'b', 't': 't', 'd': 'd', 
+    'k': 'k', 'g': 'g', 'f': 'f', 'v': 'v', 's': 's', 'z': 'z', 'S': 'ʃ', 
+    'Z': 'ʒ', 'm': 'm', 'n': 'n', 'N': 'ɲ', 'G': 'ŋ', 'l': 'l', 'R': 'ʁ', 
+    'j': 'j', 'w': 'w', '8': 'ɥ'
+     }
     
 
     api_phon = ''
@@ -199,6 +201,9 @@ def hdd(text):
 
 
 def annotating(data_path,token_path):
+    """
+    Main annotation process
+    """
 
     # ---------------------------------------------------------
     # Data management
@@ -232,8 +237,8 @@ def annotating(data_path,token_path):
     df = df.loc[df['role'] == ('Target_Child')]
 
 
-    all_corpus = df['corpus'].unique()
-    print(sorted(all_corpus))
+    all_corpus = sorted(df['corpus'].unique())
+    print(f"Corpus included : {all_corpus}")
 
     #import valence data into a dictionary
     valence_df = pd.read_csv(os.path.join(data_path, "data_fan_valence.csv"))
@@ -274,7 +279,7 @@ def annotating(data_path,token_path):
     dictionary = {}
     dictionary_other = {}
 
-    id_list,participant_ids,sentence,tok,lemm,n_tok,POSTAGS,hyper,val,imag,phon,patterns,n_syllable,fq_livre,fq_film,fq_other,mlus,vocds,age = [],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
+    id_list,participant_ids,participant_names,sentence,tok,lemm,n_tok,POSTAGS,hyper,val,imag,phon,patterns,n_syllable,fq_livre,fq_film,fq_other,mlus,vocds,age = [],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
 
     stopword = ['xxx','x', 'xx', 'www' , 'yyy' , 'zzz','-', 'qqq',
                 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','ə','ɛ','ø']
@@ -286,12 +291,12 @@ def annotating(data_path,token_path):
 
     # making word frequency list for other overheard speech
 
-    print('---------------------------------------------------------')
+    print('----------------------------------------------------------')
     print('Calculating word frequency per million of overheard speech')
-    print('---------------------------------------------------------')
+    print('----------------------------------------------------------')
 
     n_other_token = 0
-    for index, row in tqdm(df_other.iloc[:].iterrows(),total=df_other.shape[0]):
+    for index, row in tqdm(df_other.iloc[:].iterrows(),total=df_other.shape[0],desc='Overheard speech'):
         uter = str(row['utterance'])
         id = str(row['id'])
         lemsents = ast.literal_eval(row['lemme'])
@@ -344,7 +349,7 @@ def annotating(data_path,token_path):
                 if pos != 'X' and pos != 'cm':
                     individual_case[key].append(lemma) # collate each lemma in a list for each individual case
 
-    for key, value in tqdm(individual_case.items(),desc='Computing hdd for each individual case '):
+    for key, value in tqdm(individual_case.items(),desc='Computing hdd for each individual case'):
         #print(key)
         #print(len(value))
         if len(value) < 50:
@@ -354,18 +359,19 @@ def annotating(data_path,token_path):
             vocd_dict[key] = vocd
         
     print('---------------------------------------------------------')
-    print('Annotating hyperonymy, valence, imageability, phonetic, pattern ')
+    print('Annotating hyperonymy, valence, imageability, phonetic, pattern')
     print('counting the occurrence of each lemma in a dic')
     print('and counting the quantity of dico match (raw_lemme vs valence vs imagea vs hyper vs phon)')
     print('---------------------------------------------------------')
 
     # making the main loop on target_child sentence
 
-    for index, row in tqdm(df.iloc[:].iterrows(),total=df.shape[0]): 
+    for index, row in tqdm(df.iloc[:].iterrows(),total=df.shape[0],desc='Main loop annotating word value'): 
         uter = str(row['utterance'])
         id = str(row['id'])
         transcript_id = str(row['transcript_id'])
         participant_id = str(row['participant_id'])
+        participant_name = str(row['participant_name'])
         lemsents = ast.literal_eval(row['lemme'])
         POSTAG = ast.literal_eval(row['POS'])
         n_token = int(row['n_token'])
@@ -402,6 +408,7 @@ def annotating(data_path,token_path):
 
                 id_list.append(id)
                 participant_ids.append(participant_id)
+                participant_names.append(participant_name)
                 sentence.append(uter)
                 tok.append(token)
                 lemm.append(lemme)
@@ -449,7 +456,9 @@ def annotating(data_path,token_path):
 
     dico_final = {'Lemme' : nom, "Number of occurrence" : nb_occu}
 
-    donne_final = {'id': id_list, 'participant_id': participant_ids, 'occurrence': sentence, 
+    donne_final = {'id': id_list, 'participant_id': participant_ids, 
+                   'participant_name': participant_names,
+                   'occurrence': sentence, 
                    'lemma': lemm,'POS': POSTAGS,
                     'score_hyper': hyper, 'score_valance': val, 'score_imagea': imag, 
                     'phonetic': phon,'pattern': patterns, 'freq_lem_film' : fq_film, 'freq_lem_livre' : fq_livre, 'freq_overheard' : fq_other,'mlu' : mlus,'HDD' : vocds, 'age': age}
@@ -495,7 +504,7 @@ def annotating(data_path,token_path):
 # Param
 # ---------------------------------------------------------
 
-run_as_test = True
+run_as_test = False
 saving = False
 save_name = 'annotated_french_corpa1.csv'
 
@@ -530,8 +539,6 @@ if run_as_test == True:
             print('Saving successful')
             print('---------------------------------------------------------')
         #saving overheard and child_dico
-        with open('log.txt', "w") as f:
-            f.write(param)
         data_dico_final.to_csv('child_dico1.tsv', sep = '\t', encoding='utf-8')
         overheard_dico.to_csv('over_dico1.tsv', sep = '\t', encoding='utf-8')
 
